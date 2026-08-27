@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Compile targets.mind</title>
+<style>
+  body { font-family: sans-serif; max-width: 900px; margin: 24px auto; padding: 0 16px; color: #222; }
+  h1 { font-size: 20px; }
+  #libStatus { font-size: 13px; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; }
+  #libStatus.loading { background: #fff3cd; color: #7a5b00; }
+  #libStatus.ready { background: #d4edda; color: #155724; }
+  #libStatus.error { background: #f8d7da; color: #721c24; }
+  #drop {
+    border: 2px dashed #999; border-radius: 8px; padding: 24px;
+    text-align: center; color: #666; margin-bottom: 16px; cursor: pointer;
+  }
+  #drop.hover { border-color: #333; background: #f5f5f5; }
+  input[type=file] { display: none; }
+  #grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px; margin: 16px 0;
+  }
+  .tile { border: 1px solid #ddd; border-radius: 6px; overflow: hidden; background: #fafafa; }
+  .tile img { width: 100%; height: 80px; object-fit: cover; display: block; }
+  .tile .label { font-size: 11px; padding: 4px 6px; color: #333; }
+  .tile .idx { font-weight: bold; color: #b00; }
+  button {
+    background: #222; color: #fff; border: none; padding: 10px 20px;
+    border-radius: 6px; font-size: 14px; cursor: pointer;
+  }
+  button:disabled { background: #999; cursor: default; }
+  #status { margin-top: 12px; font-size: 14px; color: #444; white-space: pre-line; }
+  #download { display: none; margin-top: 12px; }
+  #download a {
+    display: inline-block; background: #0a7; color: #fff; padding: 10px 20px;
+    border-radius: 6px; text-decoration: none; font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Compile targets.mind</h1>
+<div id="libStatus" class="loading">Loading MindAR library…</div>
+<p>Select all 20 photos at once (01.jpg&hellip;20.jpg). They're sorted by
+filename before compiling, so index 0 = 01.jpg, index 1 = 02.jpg, etc.
+Check the preview grid below matches what you expect <strong>before</strong>
+you wire up your video filenames in <code>index.html</code>.</p>
+
+<div id="drop">Click to choose your 20 photos, or drag them here</div>
+<input type="file" id="fileInput" multiple accept="image/*" />
+
+<div id="grid"></div>
+
+<button id="compileBtn" disabled>Compile targets.mind</button>
+<div id="status"></div>
+<div id="download"><a id="downloadLink" download="targets.mind">Download targets.mind</a></div>
+
+<script>
+  // Try a few CDN mirrors in order, since one can be blocked by an
+  // ad-blocker/extension/corporate network while another works fine.
+  const CDN_SOURCES = [
+    'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js',
+    'https://unpkg.com/mind-ar@1.2.5/dist/mindar-image.prod.js',
+    'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mindar-image.prod.js'
+  ];
+
+  const libStatusEl = document.getElementById('libStatus');
+  let libReady = false;
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = () => resolve(src);
+      s.onerror = () => reject(new Error('Failed to load ' + src));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function loadMindAR() {
+    for (const src of CDN_SOURCES) {
+      try {
+        libStatusEl.textContent = 'Loading MindAR library from ' + new URL(src).host + '…';
+        await loadScript(src);
+        if (window.MINDAR && window.MINDAR.IMAGE && window.MINDAR.IMAGE.Compiler) {
+          libReady = true;
+          libStatusEl.textContent = 'MindAR library loaded. Ready to compile.';
+          libStatusEl.className = 'ready';
+          updateCompileButtonState();
+          return;
+        }
+        // Script loaded but didn't expose what we expect — try next source.
+      } catch (e) {
+        // try next source
+      }
+    }
+    libStatusEl.textContent =
+      'Could not load the MindAR library from any CDN. This is usually caused by ' +
+      'an ad-blocker or privacy extension blocking cdn.jsdelivr.net / unpkg.com, or ' +
+      'no internet connection. Try disabling ad-blockers for this page, or try a ' +
+      'different browser/network, then reload this file.';
+    libStatusEl.className = 'error';
+  }
+
+  loadMindAR();
+
+  const drop = document.getElementById('drop');
+  const fileInput = document.getElementById('fileInput');
+  const grid = document.getElementById('grid');
+  const compileBtn = document.getElementById('compileBtn');
+  const statusEl = document.getElementById('status');
+  const downloadDiv = document.getElementById('download');
+  const downloadLink = document.getElementById('downloadLink');
+
+  let sortedFiles = [];
+  let loadedImages = [];
+
+  drop.addEventListener('click', () => fileInput.click());
+  drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('hover'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('hover'));
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    drop.classList.remove('hover');
+    handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+  function naturalSort(a, b) {
+    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+  }
+
+  function updateCompileButtonState() {
+    compileBtn.disabled = !(libReady && sortedFiles.length > 0);
+  }
+
+  function handleFiles(fileList) {
+    sortedFiles = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+    sortedFiles.sort(naturalSort);
+    renderGrid();
+    updateCompileButtonState();
+    statusEl.textContent = sortedFiles.length + ' photos loaded. Verify the order below, then compile.';
+    downloadDiv.style.display = 'none';
+  }
+
+  function renderGrid() {
+    grid.innerHTML = '';
+    sortedFiles.forEach((file, i) => {
+      const url = URL.createObjectURL(file);
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.innerHTML = `
+        <img src="${url}" />
+        <div class="label"><span class="idx">#${i}</span> ${file.name}</div>
+      `;
+      grid.appendChild(tile);
+    });
+  }
+
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  compileBtn.addEventListener('click', async () => {
+    if (!libReady) {
+      statusEl.textContent = 'MindAR library is not loaded yet — see the status message above.';
+      return;
+    }
+    compileBtn.disabled = true;
+    statusEl.textContent = 'Loading images…';
+    try {
+      loadedImages = await Promise.all(sortedFiles.map(loadImage));
+
+      statusEl.textContent = 'Compiling (this can take a minute for 20 targets)…';
+      const compiler = new MINDAR.IMAGE.Compiler();
+      await compiler.compileImageTargets(loadedImages, (progress) => {
+        statusEl.textContent = `Compiling… ${progress.toFixed(1)}%`;
+      });
+
+      const buffer = await compiler.exportData();
+      const blob = new Blob([buffer]);
+      const url = URL.createObjectURL(blob);
+      downloadLink.href = url;
+      downloadDiv.style.display = 'block';
+
+      const mapping = sortedFiles.map((f, i) => `#${i} → ${f.name}`).join('\n');
+      statusEl.textContent = 'Done. Index mapping:\n' + mapping;
+    } catch (err) {
+      statusEl.textContent = 'Error: ' + err.message;
+      console.error(err);
+    } finally {
+      compileBtn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
+

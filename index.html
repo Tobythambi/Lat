@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>AR Wall</title>
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+  }
+
+  /* Fix: MindAR sets the camera <video> z-index:-2. Without an explicit
+     z-index here, #arjs-container / a-scene's container can lose its own
+     stacking context in some browsers and the video gets buried behind
+     the page background. Giving it z-index:0 forces its own stacking
+     context so the camera feed always renders. */
+  #ar-container {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+  }
+
+  #status {
+    position: absolute;
+    top: 12px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    font-family: sans-serif;
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    pointer-events: none;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div id="status">Point camera at a picture&hellip;</div>
+
+<div id="ar-container">
+  <a-scene
+    mindar-image="imageTargetSrc: targets.mind; autoStart: true; uiScanning: no; uiLoading: no;"
+    color-space="sRGB"
+    renderer="colorManagement: true, physicallyCorrectLights"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+  >
+    <a-assets>
+      <!-- One <video> per target index. Filenames MUST correspond to the
+           target's actual compiled index (0-based) in targets.mind, not
+           just the order you uploaded the source photos in. Verify each
+           mapping visually before shipping — see README.md. -->
+      <video id="video-0"  src="media/target-0.mp4"  preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-1"  src="media/target-1.mp4"  preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-2"  src="media/target-2.mp4"  preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-3"  src="media/target-3.mp4"  preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-4"  src="media/target-4.mp4"  preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-5"  src="media/target-5.mp4"  preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-6"  src="media/target-6.mp4"  preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-7"  src="media/target-7.mp4"  preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-8"  src="media/target-8.mp4"  preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-9"  src="media/target-9.mp4"  preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-10" src="media/target-10.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-11" src="media/target-11.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-12" src="media/target-12.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-13" src="media/target-13.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-14" src="media/target-14.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-15" src="media/target-15.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-16" src="media/target-16.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-17" src="media/target-17.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-18" src="media/target-18.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <video id="video-19" src="media/target-19.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+    </a-assets>
+
+    <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;"></a-camera>
+
+    <!-- 20 targets, index 0-19. Each entity's mindar-image-target
+         property.index MUST equal the compiled target's real index. -->
+    <a-entity id="target-0"  mindar-image-target="targetIndex: 0">
+      <a-video src="#video-0"  width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-1"  mindar-image-target="targetIndex: 1">
+      <a-video src="#video-1"  width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-2"  mindar-image-target="targetIndex: 2">
+      <a-video src="#video-2"  width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-3"  mindar-image-target="targetIndex: 3">
+      <a-video src="#video-3"  width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-4"  mindar-image-target="targetIndex: 4">
+      <a-video src="#video-4"  width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-5"  mindar-image-target="targetIndex: 5">
+      <a-video src="#video-5"  width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-6"  mindar-image-target="targetIndex: 6">
+      <a-video src="#video-6"  width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-7"  mindar-image-target="targetIndex: 7">
+      <a-video src="#video-7"  width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-8"  mindar-image-target="targetIndex: 8">
+      <a-video src="#video-8"  width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-9"  mindar-image-target="targetIndex: 9">
+      <a-video src="#video-9"  width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-10" mindar-image-target="targetIndex: 10">
+      <a-video src="#video-10" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-11" mindar-image-target="targetIndex: 11">
+      <a-video src="#video-11" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-12" mindar-image-target="targetIndex: 12">
+      <a-video src="#video-12" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-13" mindar-image-target="targetIndex: 13">
+      <a-video src="#video-13" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-14" mindar-image-target="targetIndex: 14">
+      <a-video src="#video-14" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-15" mindar-image-target="targetIndex: 15">
+      <a-video src="#video-15" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-16" mindar-image-target="targetIndex: 16">
+      <a-video src="#video-16" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-17" mindar-image-target="targetIndex: 17">
+      <a-video src="#video-17" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-18" mindar-image-target="targetIndex: 18">
+      <a-video src="#video-18" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+    <a-entity id="target-19" mindar-image-target="targetIndex: 19">
+      <a-video src="#video-19" width="1" height="0.5625" position="0 0 0" rotation="0 0 0"></a-video>
+    </a-entity>
+  </a-scene>
+</div>
+
+<script>
+  const statusEl = document.getElementById('status');
+  const scene = document.querySelector('a-scene');
+  const total = 20;
+  const found = new Set();
+
+  for (let i = 0; i < total; i++) {
+    const targetEl = document.getElementById('target-' + i);
+    const videoEl = document.getElementById('video-' + i);
+
+    targetEl.addEventListener('targetFound', () => {
+      found.add(i);
+      statusEl.textContent = found.size + ' of ' + total + ' pictures recognized — playing #' + i;
+      videoEl.currentTime = 0;
+      videoEl.play().catch(() => {});
+    });
+
+    targetEl.addEventListener('targetLost', () => {
+      videoEl.pause();
+      statusEl.textContent = found.size + ' of ' + total + ' pictures recognized. Point camera at a picture…';
+    });
+  }
+</script>
+
+</body>
+</html>
