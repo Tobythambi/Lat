@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>AR Wall — 20 Image Targets</title>
+<title>AR Wall — 20 Picture AR</title>
 <style>
   html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden;
     background:#000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -49,6 +49,17 @@
     flex-direction:column; gap:10px; color:#fff; background:#000; z-index:40;
     padding:24px; text-align:center;
   }
+
+  #unmuteBtn {
+    position:absolute; bottom:90px; left:0; right:0; z-index:20;
+    display:flex; justify-content:center; pointer-events:none;
+  }
+  #unmuteBtn button {
+    pointer-events:auto;
+    background:#fff; color:#111; border:none; border-radius:999px;
+    padding:10px 20px; font-size:13px; font-weight:600; cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,.35); display:none;
+  }
 </style>
 </head>
 <body>
@@ -66,13 +77,15 @@
 <div id="container"></div>
 
 <div id="overlay">
-  <div id="title">AR Wall — 20 Image Targets</div>
-  <div id="status">Point your camera at a picture. The matching video plays only while it's recognized.</div>
+  <div id="title">AR Wall — 20 Picture AR</div>
+  <div id="status">Point your camera at a picture.</div>
 </div>
 
-<div id="badge">MindAR · 0 of 20 found</div>
+<div id="badge">MindAR · 20 targets</div>
 
-<div id="foundBanner" style="opacity:0;"><span>Target found</span></div>
+<div id="foundBanner" style="opacity:0;"><span id="foundBannerText">Target found</span></div>
+
+<div id="unmuteBtn"><button id="unmuteBtnInner">🔊 Tap for sound</button></div>
 
 <script type="importmap">
 {
@@ -88,19 +101,31 @@
   import * as THREE from "three";
   import { MindARThree } from "mindar-image-three";
 
-  const TARGET_MIND_URL = "./targets.mind";
-  const NUM_TARGETS = 20;
-  // media/target-0.mp4 ... media/target-19.mp4 — index MUST match the
-  // compiled index in targets.mind, not just upload order.
-  const VIDEO_URL = (i) => `./media/target-${i}.mp4`;
-  const VIDEO_WIDTH = 1.4; // relative to the target image's width (1.0 = same width as the photo)
+  const TARGET_MIND_URL = "./targets.mind"; // contains all 20 targets, compiled together, index 0-19
+
+  // One entry per picture, index 0-19, verified 1:1 with the compiled
+  // targets.mind (01.jpg -> index 0, 02.jpg -> index 1, ... 20.jpg -> index 19).
+  const ITEMS = Array.from({ length: 20 }, (_, i) => ({
+    index: i,
+    videoUrl: `./media/target-${i}.mp4`,
+    width: 1.2,
+  }));
 
   const loadingEl = document.getElementById('loading');
   const errorBox = document.getElementById('errorBox');
   const errorMsg = document.getElementById('errorMsg');
   const statusEl = document.getElementById('status');
-  const badgeEl = document.getElementById('badge');
   const foundBanner = document.getElementById('foundBanner');
+  const foundBannerText = document.getElementById('foundBannerText');
+  const unmuteBtn = document.getElementById('unmuteBtnInner');
+
+  let allVideos = [];
+  let audioUnlocked = false;
+  unmuteBtn.addEventListener('click', () => {
+    audioUnlocked = true;
+    allVideos.forEach(v => { v.muted = false; });
+    unmuteBtn.style.display = 'none';
+  });
 
   window.addEventListener('error', (e) => {
     const el = document.getElementById('status');
@@ -108,7 +133,7 @@
   });
 
   let mindarThree, renderer, scene, camera;
-  const foundSet = new Set();
+  let activeCount = 0;
 
   init();
 
@@ -119,14 +144,14 @@
         imageTargetSrc: TARGET_MIND_URL,
         uiScanning: "yes",
         uiLoading: "no",
-        filterMinCF: 0.0001,   // lower = more smoothing (default ~0.001)
-        filterBeta: 0.001,     // lower = more smoothing, less responsive to fast motion (default ~0.01)
-        missTolerance: 5,      // frames allowed to "guess" position before considering target lost
-        warmupTolerance: 3,    // frames required before considering target newly found
+        filterMinCF: 0.0001,
+        filterBeta: 0.001,
+        missTolerance: 5,
+        warmupTolerance: 3,
       });
 
       renderer = mindarThree.renderer;
-      renderer.setClearColor(0x000000, 0); // transparent clear, so the camera feed shows through
+      renderer.setClearColor(0x000000, 0);
       scene = mindarThree.scene;
       camera = mindarThree.camera;
 
@@ -136,29 +161,31 @@
       dir.position.set(0.5, 1, 1);
       scene.add(dir);
 
-      // One anchor + video plane per target index, 0 through 19.
-      for (let i = 0; i < NUM_TARGETS; i++) {
-        const anchor = mindarThree.addAnchor(i);
-        const videoPlane = setupVideoPlane(VIDEO_URL(i));
+      ITEMS.forEach((item, i) => {
+        const anchor = mindarThree.addAnchor(item.index);
+        const videoPlane = setupVideoPlane(item.videoUrl, item.width);
         anchor.group.add(videoPlane.mesh);
+        allVideos.push(videoPlane.video);
+        if (audioUnlocked) videoPlane.video.muted = false;
 
         anchor.onTargetFound = () => {
-          foundSet.add(i);
-          badgeEl.textContent = `MindAR · ${foundSet.size} of ${NUM_TARGETS} found`;
-          statusEl.textContent = `Picture #${i} found — playing video.`;
-          foundBanner.style.opacity = '1';
-          setTimeout(() => { foundBanner.style.opacity = '0'; }, 1500);
+          activeCount++;
+          updateStatus();
+          flashBanner(`Picture ${i + 1} found → playing ${item.videoUrl}`);
           videoPlane.video.currentTime = 0;
           videoPlane.video.play().catch(() => {});
+          if (!audioUnlocked) unmuteBtn.style.display = 'block';
         };
         anchor.onTargetLost = () => {
-          statusEl.textContent = 'Point your camera at a picture.';
+          activeCount = Math.max(0, activeCount - 1);
+          updateStatus();
           videoPlane.video.pause();
         };
-      }
+      });
 
       await mindarThree.start();
       loadingEl.style.display = 'none';
+      updateStatus();
 
       renderer.setAnimationLoop(() => {
         renderer.render(scene, camera);
@@ -170,28 +197,41 @@
     }
   }
 
-  function setupVideoPlane(videoUrl) {
+  function updateStatus() {
+    statusEl.textContent = activeCount > 0
+      ? `${activeCount} of ${ITEMS.length} pictures recognized — playing.`
+      : `Point your camera at a picture. ${ITEMS.length} pictures set up.`;
+  }
+
+  let bannerTimeout;
+  function flashBanner(text) {
+    foundBannerText.textContent = text;
+    foundBanner.style.opacity = '1';
+    clearTimeout(bannerTimeout);
+    bannerTimeout = setTimeout(() => { foundBanner.style.opacity = '0'; }, 1200);
+  }
+
+  function setupVideoPlane(videoUrl, widthUnits) {
     const video = document.createElement('video');
     video.src = videoUrl;
     video.crossOrigin = 'anonymous';
     video.loop = true;
-    video.muted = true;       // required for autoplay on mobile browsers
+    video.muted = true;
     video.playsInline = true;
     video.setAttribute('webkit-playsinline', 'true');
 
     const texture = new THREE.VideoTexture(video);
     texture.colorSpace = THREE.SRGBColorSpace || texture.colorSpace;
 
-    // placeholder 16:9 until metadata loads, then correct the aspect ratio
-    let planeWidth = VIDEO_WIDTH;
-    let planeHeight = VIDEO_WIDTH * (9 / 16);
+    let planeWidth = widthUnits;
+    let planeHeight = widthUnits * (9 / 16);
     const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
     const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geometry, material);
 
     video.addEventListener('loadedmetadata', () => {
       const aspect = video.videoWidth / video.videoHeight;
-      const newHeight = VIDEO_WIDTH / aspect;
+      const newHeight = widthUnits / aspect;
       mesh.scale.set(1, newHeight / planeHeight, 1);
     });
 
