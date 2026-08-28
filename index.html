@@ -319,19 +319,39 @@
     const texture = new THREE.VideoTexture(video);
     texture.colorSpace = THREE.SRGBColorSpace || texture.colorSpace;
 
-    let planeWidth = widthUnits;
+    const group = new THREE.Group();
+
+    // Frame (ivory border), sits just behind the video plane.
+    const FRAME_MARGIN = widthUnits * 0.045; // thin border, ~4.5% of width per side
+    const frameMaterial = new THREE.MeshBasicMaterial({ color: 0xf5f0e6, side: THREE.DoubleSide });
+    let frameHeight = widthUnits * (9 / 16) + FRAME_MARGIN * 2;
+    const frameGeometry = new THREE.PlaneGeometry(widthUnits + FRAME_MARGIN * 2, frameHeight);
+    const frameMesh = new THREE.Mesh(frameGeometry, frameMaterial);
+    frameMesh.position.z = -0.003;
+    group.add(frameMesh);
+
+    // Video plane, placeholder 16:9 until metadata loads.
     let planeHeight = widthUnits * (9 / 16);
-    const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
+    const geometry = new THREE.PlaneGeometry(widthUnits, planeHeight);
     const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geometry, material);
+    group.add(mesh);
 
     video.addEventListener('loadedmetadata', () => {
       const aspect = video.videoWidth / video.videoHeight;
-      const newHeight = widthUnits / aspect;
-      mesh.scale.set(1, newHeight / planeHeight, 1);
+      const realHeight = widthUnits / aspect;
+
+      mesh.geometry.dispose();
+      mesh.geometry = new THREE.PlaneGeometry(widthUnits, realHeight);
+
+      frameMesh.geometry.dispose();
+      frameMesh.geometry = new THREE.PlaneGeometry(
+        widthUnits + FRAME_MARGIN * 2,
+        realHeight + FRAME_MARGIN * 2
+      );
     });
 
-    return { mesh, video };
+    return { mesh: group, video };
   }
 </script>
 </body>
