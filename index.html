@@ -188,6 +188,12 @@
 
   const TARGET_MIND_URL = "./targets.mind"; // contains all 20 targets, compiled together, index 0-19
 
+  // Bump this any time you replace a video or targets.mind and push an
+  // update — it forces visitors' browsers to fetch the new file instead of
+  // serving a stale cached copy. Just change the date/number, no other edits needed.
+  const ASSET_VERSION = "2026-08-28-1";
+  const withVersion = (path) => `${path}?v=${ASSET_VERSION}`;
+
   // One entry per picture, index 0-19, verified 1:1 with the compiled
   // targets.mind (01.jpg -> index 0, 02.jpg -> index 1, ... 20.jpg -> index 19).
   // Manual overrides below: which video plays for a given index, when it's
@@ -199,7 +205,7 @@
   };
   const ITEMS = Array.from({ length: 20 }, (_, i) => ({
     index: i,
-    videoUrl: VIDEO_OVERRIDES[i] || `./media/target-${i}.mp4`,
+    videoUrl: withVersion(VIDEO_OVERRIDES[i] || `./media/target-${i}.mp4`),
     width: 1.2,
   }));
 
@@ -238,7 +244,7 @@
     try {
       mindarThree = new MindARThree({
         container: document.querySelector("#container"),
-        imageTargetSrc: TARGET_MIND_URL,
+        imageTargetSrc: withVersion(TARGET_MIND_URL),
         uiScanning: "no",
         uiLoading: "no",
         filterMinCF: 0.00005,
