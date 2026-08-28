@@ -190,9 +190,16 @@
 
   // One entry per picture, index 0-19, verified 1:1 with the compiled
   // targets.mind (01.jpg -> index 0, 02.jpg -> index 1, ... 20.jpg -> index 19).
+  // Manual overrides below: which video plays for a given index, when it's
+  // not simply target-<index>.mp4 (e.g. content was swapped between pictures).
+  const VIDEO_OVERRIDES = {
+    2: './media/target-3.mp4',  // 03.jpg
+    3: './media/target-4.mp4',  // 04.jpg
+    4: './media/target-2.mp4',  // 05.jpg
+  };
   const ITEMS = Array.from({ length: 20 }, (_, i) => ({
     index: i,
-    videoUrl: `./media/target-${i}.mp4`,
+    videoUrl: VIDEO_OVERRIDES[i] || `./media/target-${i}.mp4`,
     width: 1.2,
   }));
 
