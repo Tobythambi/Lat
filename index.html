@@ -34,7 +34,7 @@
   }
 
   #loading {
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center;
     flex-direction:column; gap:12px; color:#fff; background:#000; z-index:30;
   }
   .spinner {
@@ -48,6 +48,40 @@
     position:absolute; inset:0; display:none; align-items:center; justify-content:center;
     flex-direction:column; gap:10px; color:#fff; background:#000; z-index:40;
     padding:24px; text-align:center;
+  }
+
+  #welcomeScreen {
+    position:absolute; inset:0; z-index:50;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:22px;
+    background-image: url('./assets/welcome.png');
+    background-size: cover;
+    background-position: center;
+    background-color: #111;
+  }
+  #welcomeScreen::before {
+    content: '';
+    position:absolute; inset:0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.75) 100%);
+  }
+  #welcomeContent {
+    position:relative; z-index:1;
+    display:flex; flex-direction:column; align-items:center; gap:18px;
+    padding: 0 24px;
+  }
+  #welcomeTitle {
+    color:#fff; font-size:22px; font-weight:700; text-align:center;
+    text-shadow:0 2px 8px rgba(0,0,0,.6);
+  }
+  #startBtn {
+    background:#fff; color:#111; border:none; border-radius:999px;
+    padding:14px 32px; font-size:15px; font-weight:700; cursor:pointer;
+    box-shadow:0 6px 20px rgba(0,0,0,.4);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
   }
 
   #unmuteBtn {
@@ -72,6 +106,13 @@
 <div id="errorBox">
   <div style="font-size:15px; font-weight:600;">Couldn't start AR</div>
   <div id="errorMsg" style="font-size:12.5px; color:#c9c9d1; max-width:320px;"></div>
+</div>
+
+<div id="welcomeScreen">
+  <div id="welcomeContent">
+    <div id="welcomeTitle">Welcome to the AR Wall</div>
+    <button id="startBtn">Tap here for experience</button>
+  </div>
 </div>
 
 <div id="container"></div>
@@ -136,7 +177,11 @@
   let mindarThree, renderer, scene, camera;
   let activeCount = 0;
 
-  init();
+  document.getElementById('startBtn').addEventListener('click', () => {
+    document.getElementById('welcomeScreen').style.display = 'none';
+    document.getElementById('loading').style.display = 'flex';
+    init();
+  });
 
   async function init() {
     try {
