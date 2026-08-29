@@ -54,30 +54,76 @@
     position:absolute; inset:0; z-index:50;
     display:flex; align-items:center; justify-content:center;
     flex-direction:column; gap:22px;
+    background-color: #111;
     background-image: url('./assets/welcome.png');
     background-size: cover;
     background-position: center;
-    background-color: #111;
+    overflow:hidden;
   }
+  #welcomeVideo { display:none; }
+  .welcomeSlide {
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:cover; z-index:0;
+    opacity:0;
+    transition: opacity 0.6s ease;
+  }
+  .welcomeSlide.active { opacity:1; }
   #welcomeScreen::before {
     content: '';
-    position:absolute; inset:0;
-    background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.75) 100%);
+    position:absolute; inset:0; z-index:1;
+    background: linear-gradient(200deg,
+      rgba(20,10,30,0.35) 0%,
+      rgba(0,0,0,0.55) 45%,
+      rgba(0,0,0,0.8) 100%);
+    background-size: 250% 250%;
+    animation: gradientShift 9s ease-in-out infinite;
+  }
+  @keyframes gradientShift {
+    0%   { background-position: 0% 30%; }
+    50%  { background-position: 100% 70%; }
+    100% { background-position: 0% 30%; }
+  }
+  .firefly {
+    position:absolute; z-index:2; bottom:-10px;
+    width:5px; height:5px; border-radius:50%;
+    background:#ffe9b0;
+    box-shadow:0 0 8px 3px rgba(255,233,176,0.65);
+    opacity:0;
+    animation: floatUp linear infinite;
+  }
+  @keyframes floatUp {
+    0%   { transform:translate(0,0) scale(0.6); opacity:0; }
+    12%  { opacity:0.9; }
+    85%  { opacity:0.7; }
+    100% { transform:translate(var(--drift,20px),-100vh) scale(1); opacity:0; }
   }
   #welcomeContent {
-    position:relative; z-index:1;
-    display:flex; flex-direction:column; align-items:center; gap:18px;
+    position:relative; z-index:3;
+    display:flex; flex-direction:column; align-items:center; gap:16px;
     padding: 0 24px;
   }
   #welcomeTitle {
-    color:#fff; font-size:22px; font-weight:700; text-align:center;
-    text-shadow:0 2px 8px rgba(0,0,0,.6);
+    color:#fff; font-size:24px; font-weight:700; text-align:center;
+    text-shadow:0 2px 10px rgba(0,0,0,.7);
+    opacity:0; transform:translateY(14px);
+    animation: fadeSlideUp .8s ease forwards .15s;
+  }
+  #welcomeSubtitle {
+    color:#e9e6df; font-size:13.5px; text-align:center; max-width:280px;
+    line-height:1.5;
+    text-shadow:0 1px 6px rgba(0,0,0,.7);
+    opacity:0; transform:translateY(14px);
+    animation: fadeSlideUp .8s ease forwards .5s;
+  }
+  @keyframes fadeSlideUp {
+    to { opacity:1; transform:translateY(0); }
   }
   #startBtn {
     background:#fff; color:#111; border:none; border-radius:999px;
     padding:14px 32px; font-size:15px; font-weight:700; cursor:pointer;
     box-shadow:0 6px 20px rgba(0,0,0,.4);
-    animation: pulse 1.8s ease-in-out infinite;
+    opacity:0;
+    animation: fadeSlideUp .8s ease forwards .9s, pulse 1.8s ease-in-out infinite 1.7s;
   }
   @keyframes pulse {
     0%, 100% { transform: scale(1); }
@@ -145,8 +191,21 @@
 </div>
 
 <div id="welcomeScreen">
+  <video id="welcomeVideo" autoplay muted loop playsinline webkit-playsinline></video>
+  <img class="welcomeSlide" id="slide0" src="./assets/welcome-1.png" />
+  <img class="welcomeSlide" id="slide1" src="./assets/welcome-2.png" />
+  <img class="welcomeSlide" id="slide2" src="./assets/welcome-3.png" />
+  <div class="firefly" style="left:8%; --drift:14px; animation-duration:7.5s; animation-delay:0s;"></div>
+  <div class="firefly" style="left:22%; --drift:-18px; animation-duration:9s; animation-delay:1.2s;"></div>
+  <div class="firefly" style="left:38%; --drift:10px; animation-duration:6.8s; animation-delay:2.4s;"></div>
+  <div class="firefly" style="left:55%; --drift:-12px; animation-duration:8.2s; animation-delay:.6s;"></div>
+  <div class="firefly" style="left:68%; --drift:16px; animation-duration:7.2s; animation-delay:3s;"></div>
+  <div class="firefly" style="left:80%; --drift:-20px; animation-duration:9.5s; animation-delay:1.8s;"></div>
+  <div class="firefly" style="left:90%; --drift:8px; animation-duration:6.5s; animation-delay:2.9s;"></div>
+  <div class="firefly" style="left:15%; --drift:-10px; animation-duration:8.8s; animation-delay:4.1s;"></div>
   <div id="welcomeContent">
     <div id="welcomeTitle">Welcome to the AR Wall</div>
+    <div id="welcomeSubtitle">Point your camera at a picture. Watch it come alive.</div>
     <button id="startBtn">Tap here for experience</button>
   </div>
 </div>
@@ -191,7 +250,7 @@
   // Bump this any time you replace a video or targets.mind and push an
   // update — it forces visitors' browsers to fetch the new file instead of
   // serving a stale cached copy. Just change the date/number, no other edits needed.
-  const ASSET_VERSION = "2026-08-29-5";
+  const ASSET_VERSION = "2026-08-29-6";
   const withVersion = (path) => `${path}?v=${ASSET_VERSION}`;
 
   // One entry per picture, index 0-19, verified 1:1 with the compiled
@@ -239,6 +298,32 @@
     document.getElementById('loading').style.display = 'flex';
     init();
   });
+
+  const welcomeVideoEl = document.getElementById('welcomeVideo');
+  welcomeVideoEl.src = withVersion('./assets/welcome.mp4');
+  welcomeVideoEl.addEventListener('error', () => {
+    // If assets/welcome.mp4 doesn't exist yet (or fails to load), fall back
+    // cleanly to the poster image instead of showing a broken-video icon.
+    welcomeVideoEl.style.display = 'none';
+    welcomeVideoEl.removeAttribute('src');
+  });
+
+  // Welcome-screen background slideshow: crossfades between slides every
+  // 1.5s, loops continuously. Add more <img class="welcomeSlide"> elements
+  // in the HTML (and bump SLIDE_COUNT) to add more pictures later.
+  const SLIDE_COUNT = 3;
+  const SLIDE_DURATION_MS = 1500;
+  let currentSlide = 0;
+  const slideEls = Array.from({ length: SLIDE_COUNT }, (_, i) => document.getElementById(`slide${i}`));
+  slideEls.forEach((el) => { if (el) el.src = withVersion(el.getAttribute('src')); });
+  if (slideEls[0]) slideEls[0].classList.add('active');
+  if (SLIDE_COUNT > 1) {
+    setInterval(() => {
+      slideEls[currentSlide].classList.remove('active');
+      currentSlide = (currentSlide + 1) % SLIDE_COUNT;
+      slideEls[currentSlide].classList.add('active');
+    }, SLIDE_DURATION_MS);
+  }
 
   async function init() {
     try {
